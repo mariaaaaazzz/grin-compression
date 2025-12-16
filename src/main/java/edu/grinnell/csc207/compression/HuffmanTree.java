@@ -168,7 +168,8 @@ public class HuffmanTree {
         return codes;
     }
 
-    /** Recursive DFS that assigns codes 
+    /** 
+     * Recursive DFS that assigns codes.
      * @param node current node
      * @param path current path
      * @param map map from value to code
