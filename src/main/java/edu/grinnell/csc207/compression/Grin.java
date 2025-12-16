@@ -1,5 +1,6 @@
 package edu.grinnell.csc207.compression;
 
+import java.io.IOException;
 import java.util.Map;
 
 /**
@@ -12,9 +13,25 @@ public class Grin {
      * @param infile the file to decode
      * @param outfile the file to ouptut to
      */
-    public static void decode (String infile, String outfile) {
-        // TODO: fill me in!
+    public static void decode (String infile, String outfile) throws IOException {
+        BitInputStream in = new BitInputStream(infile);
+        BitOutputStream out = new BitOutputStream(outfile);
+
+
+        int magic = in.readBits(32);
+        if (magic != 0x736) {
+            throw new IllegalArgumentException("Not a .grin file (bad magic number)");
+        }
+
+        HuffmanTree tree = new HuffmanTree(in);
+
+        tree.decode(in, out);
+
+
+        in.close();
+        out.close();
     }
+
 
     /**
      * Creates a mapping from 8-bit sequences to number-of-occurrences of

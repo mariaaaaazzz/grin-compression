@@ -1,6 +1,12 @@
 package edu.grinnell.csc207.compression;
 
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.PriorityQueue;
+import java.util.Iterator;
+
+import org.w3c.dom.Node;
 
 /**
  * A HuffmanTree derives a space-efficient coding of a collection of byte
@@ -14,23 +20,131 @@ import java.util.Map;
  * Instead, we use the next larger primitive integral type, short, to store
  * our byte values.
  */
+
 public class HuffmanTree {
 
+    private static class Node {
+        short value; 
+        int freq;
+        Node left;
+        Node right;
+
+        // Leaf node
+        Node(short value, int freq) {
+            this.value = value;
+            this.freq = freq;
+            this.left = null;
+            this.right = null;
+        }
+
+        // Internal node
+        Node(Node left, Node right) {
+            this.left = left;
+            this.right = right;
+            this.freq = left.freq + right.freq;
+        }
+
+        boolean isLeaf() {
+            return left == null && right == null;
+        }
+    }
+
+    private Node root;
+    
     /**
      * Constructs a new HuffmanTree from a frequency map.
      * @param freqs a map from 9-bit values to frequencies.
      */
     public HuffmanTree (Map<Short, Integer> freqs) {
-        // TODO: fill me in!
+
+        short EOF = (short) 256;
+        freqs.put(EOF, 1);
+
+        PriorityQueue<Node> pq = new PriorityQueue<Node>(
+            new Comparator<Node>() {
+                @Override
+                public int compare(Node n1, Node n2) {
+                    return Integer.compare(n1.freq, n2.freq);
+                }
+            }
+        );
+
+        for (Map.Entry<Short, Integer> entry : freqs.entrySet()) {
+            short value = entry.getKey();
+            int freq = entry.getValue();
+            pq.add(new Node(value, freq));
+        }
+
+        if (pq.isEmpty()) {
+            this.root = null;
+            return;
+        }
+
+        while (pq.size() > 1) {
+            Node n1 = pq.poll();   // smallest
+            Node n2 = pq.poll();   // second smallest
+            Node parent = new Node(n1, n2);
+            pq.add(parent);
+        }
+
+        this.root = pq.poll();
     }
+
+    /**
+     * Helper: read a serialized Huffman tree in preorder from the bit stream.
+     */
+    private Node readTree(BitInputStream in) {
+        int flag = in.readBit();
+        if (flag == -1) {
+            throw new IllegalStateException();
+        }
+
+        if (flag == 0) {
+            int val = in.readBits(9);
+            if (val == -1) {
+                throw new IllegalStateException();
+            }
+            return new Node((short) val, 0);
+        } else {
+            Node left = readTree(in);
+            Node right = readTree(in);
+            return new Node(left, right);
+        }
+    }
+
+
+
+
+
 
     /**
      * Constructs a new HuffmanTree from the given file.
      * @param in the input file (as a BitInputStream)
      */
     public HuffmanTree (BitInputStream in) {
-        // TODO: fill me in!
+        this.root = readTree(in);
     }
+
+
+
+    /**
+     * Helper: write the tree to the output stream in preorder.
+     */
+    private void writeTree(Node node, BitOutputStream out) {
+        if (node.isLeaf()) {
+            out.writeBit(0);
+            out.writeBits(node.value, 9);
+        } else {
+            out.writeBit(1);
+            writeTree(node.left, out);
+            writeTree(node.right, out);
+        }
+    }
+
+
+
+
+
 
     /**
      * Writes this HuffmanTree to the given file as a stream of bits in a
@@ -38,9 +152,36 @@ public class HuffmanTree {
      * @param out the output file as a BitOutputStream
      */
     public void serialize (BitOutputStream out) {
-        // TODO: fill me in!
+        writeTree(this.root, out);
     }
    
+
+
+    /**
+ * Build a map from value (0–256) to its Huffman code as a string of '0'/'1'.
+ */
+private Map<Short, String> buildCodeMap() {
+    Map<Short, String> codes = new HashMap<>();
+    buildCodesRecursive(this.root, "", codes);
+    return codes;
+}
+
+/** Recursive DFS that assigns codes */
+private void buildCodesRecursive(Node node, String path, Map<Short, String> map) {
+    if (node.isLeaf()) {
+        map.put(node.value, path);
+        return;
+    }
+    // go left = 0
+    buildCodesRecursive(node.left, path + "0", map);
+    // go right = 1
+    buildCodesRecursive(node.right, path + "1", map);
+}
+
+
+
+
+
     /**
      * Encodes the file given as a stream of bits into a compressed format
      * using this Huffman tree. The encoded values are written, bit-by-bit
@@ -49,7 +190,23 @@ public class HuffmanTree {
      * @param out the file to write the compressed output to.
      */
     public void encode (BitInputStream in, BitOutputStream out) {
-        // TODO: fill me in!
+        Map<Short, String> codeMap = buildCodeMap();
+
+    int b;
+    while ((b = in.readBits(8)) != -1) {
+        short value = (short) b;
+        String code = codeMap.get(value);
+        for (int i = 0; i < code.length(); i++) {
+            out.writeBit(code.charAt(i) == '1' ? 1 : 0);
+        }
+    }
+
+    short EOF = 256;
+    String eofCode = codeMap.get(EOF);
+    for (int i = 0; i < eofCode.length(); i++) {
+        out.writeBit(eofCode.charAt(i) == '1' ? 1 : 0);
+    }
+
     }
 
     /**
@@ -61,6 +218,28 @@ public class HuffmanTree {
      * @param out the file to write the decompressed output to.
      */
     public void decode (BitInputStream in, BitOutputStream out) {
-        // TODO: fill me in!
+        if (root == null) {
+            return;
+        }
+
+        Node current = root;
+
+        while (in.hasBits()) {
+            int bit = in.readBit();
+            if (bit == -1) {
+                return;
+            }
+
+            current = (bit == 0) ? current.left : current.right;
+
+            if (current.isLeaf()) {
+                if (current.value == 256) {
+                    return;
+                }
+
+                out.writeBits(current.value & 0xFF, 8);
+                current = root;
+            }
+        }
     }
 }
