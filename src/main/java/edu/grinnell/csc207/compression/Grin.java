@@ -14,7 +14,7 @@ public class Grin {
      * @param infile the file to decode
      * @param outfile the file to ouptut to
      */
-    public static void decode (String infile, String outfile) throws IOException {
+    public static void decode(String infile, String outfile) throws IOException {
         BitInputStream in = new BitInputStream(infile);
         BitOutputStream out = new BitOutputStream(outfile);
 
@@ -43,8 +43,8 @@ public class Grin {
      * @param file the file to read
      * @return a freqency map for the given file
      */
-    public static Map<Short, Integer> createFrequencyMap (String file) throws IOException {
-       BitInputStream in = new BitInputStream(file);
+    public static Map<Short, Integer> createFrequencyMap(String file) throws IOException {
+        BitInputStream in = new BitInputStream(file);
         Map<Short, Integer> freqs = new HashMap<>();
 
         int bits;
@@ -69,7 +69,7 @@ public class Grin {
      * @param infile the file to encode.
      * @param outfile the file to write the output to.
      */
-    public static void encode (String infile, String outfile) throws IOException {
+    public static void encode(String infile, String outfile) throws IOException {
          // 1) Build frequency map from the raw input file (8-bit chunks)
         Map<Short, Integer> freqs = createFrequencyMap(infile);
 
@@ -96,7 +96,7 @@ public class Grin {
      * The entry point to the program.
      * @param args the command-line arguments.
      */
-    public static void main (String[] args) throws IOException {
+    public static void main(String[] args) throws IOException {
         if (args.length != 3) {
             System.out.println("Usage: java Grin <encode|decode> <infile> <outfile>");
             return;

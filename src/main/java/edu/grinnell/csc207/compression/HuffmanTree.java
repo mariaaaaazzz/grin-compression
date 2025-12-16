@@ -48,15 +48,17 @@ public class HuffmanTree {
     }
 
     private Node root;
+
+    private static final short EOF_value = (short) 256;
+
     
     /**
      * Constructs a new HuffmanTree from a frequency map.
      * @param freqs a map from 9-bit values to frequencies.
      */
-    public HuffmanTree (Map<Short, Integer> freqs) {
+    public HuffmanTree(Map<Short, Integer> freqs) {
 
-        short EOF = (short) 256;
-        freqs.put(EOF, 1);
+        freqs.put(EOF_value, 1);
 
         PriorityQueue<Node> pq = new PriorityQueue<Node>(
             new Comparator<Node>() {
@@ -79,8 +81,8 @@ public class HuffmanTree {
         }
 
         while (pq.size() > 1) {
-            Node n1 = pq.poll();   // smallest
-            Node n2 = pq.poll();   // second smallest
+            Node n1 = pq.poll();
+            Node n2 = pq.poll();
             Node parent = new Node(n1, n2);
             pq.add(parent);
         }
@@ -90,6 +92,8 @@ public class HuffmanTree {
 
     /**
      * Helper: read a serialized Huffman tree in preorder from the bit stream.
+     * @param in the input bit stream
+     * @return the root of the reconstructed tree
      */
     private Node readTree(BitInputStream in) {
         int flag = in.readBit();
@@ -116,7 +120,7 @@ public class HuffmanTree {
      * Constructs a new HuffmanTree from the given file.
      * @param in the input file (as a BitInputStream)
      */
-    public HuffmanTree (BitInputStream in) {
+    public HuffmanTree(BitInputStream in) {
         this.root = readTree(in);
     }
 
@@ -124,6 +128,8 @@ public class HuffmanTree {
 
     /**
      * Helper: write the tree to the output stream in preorder.
+     * @param node the current node
+     * @param out the output bit stream
      */
     private void writeTree(Node node, BitOutputStream out) {
         if (node.isLeaf()) {
@@ -146,7 +152,7 @@ public class HuffmanTree {
      * serialized format.
      * @param out the output file as a BitOutputStream
      */
-    public void serialize (BitOutputStream out) {
+    public void serialize(BitOutputStream out) {
         writeTree(this.root, out);
     }
    
@@ -154,6 +160,7 @@ public class HuffmanTree {
 
     /**
      * Build a map from value (0–256) to its Huffman code as a string of '0'/'1'.
+     * @return the map from value to code
      */
     private Map<Short, String> buildCodeMap() {
         Map<Short, String> codes = new HashMap<>();
@@ -161,7 +168,11 @@ public class HuffmanTree {
         return codes;
     }
 
-    /** Recursive DFS that assigns codes */
+    /** Recursive DFS that assigns codes 
+     * @param node current node
+     * @param path current path
+     * @param map map from value to code
+    */
     private void buildCodesRecursive(Node node, String path, Map<Short, String> map) {
         if (node.isLeaf()) {
             map.put(node.value, path);
@@ -184,7 +195,7 @@ public class HuffmanTree {
      * @param in the file to compress.
      * @param out the file to write the compressed output to.
      */
-    public void encode (BitInputStream in, BitOutputStream out) {
+    public void encode(BitInputStream in, BitOutputStream out) {
         Map<Short, String> codeMap = buildCodeMap();
 
         int b;
@@ -196,8 +207,8 @@ public class HuffmanTree {
             }
         }
 
-        short EOF = (short)256;
-        String eofCode = codeMap.get(EOF);
+ 
+        String eofCode = codeMap.get(EOF_value);
 
         for (int i = 0; i < eofCode.length(); i++) {
             out.writeBit(eofCode.charAt(i) == '1' ? 1 : 0);
@@ -213,7 +224,7 @@ public class HuffmanTree {
      * @param in the file to decompress.
      * @param out the file to write the decompressed output to.
      */
-    public void decode (BitInputStream in, BitOutputStream out) {
+    public void decode(BitInputStream in, BitOutputStream out) {
         if (root == null) {
             return;
         }
@@ -229,7 +240,7 @@ public class HuffmanTree {
             current = (bit == 0) ? current.left : current.right;
 
             if (current.isLeaf()) {
-                if (current.value == 256) {
+                if (current.value == EOF_value) {
                     return;
                 }
 

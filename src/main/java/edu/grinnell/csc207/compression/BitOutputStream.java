@@ -1,6 +1,8 @@
 package edu.grinnell.csc207.compression;
 
-import java.io.*;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.PrintStream;
 
 /**
  * A BitOutputStream allows bit-by-bit writing to a file.
@@ -60,7 +62,7 @@ public class BitOutputStream {
      * @param n the number of bits to write from the integer
      */
     public void writeBits(int bits, int n) {
-        for (int i = n-1; i >= 0; i--) {
+        for (int i = n - 1; i >= 0; i--) {
             writeBit((bits >>> i) % 2);
         }
     }
