@@ -4,9 +4,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.PriorityQueue;
-import java.util.Iterator;
 
-import org.w3c.dom.Node;
 
 /**
  * A HuffmanTree derives a space-efficient coding of a collection of byte
@@ -114,9 +112,6 @@ public class HuffmanTree {
 
 
 
-
-
-
     /**
      * Constructs a new HuffmanTree from the given file.
      * @param in the input file (as a BitInputStream)
@@ -158,25 +153,25 @@ public class HuffmanTree {
 
 
     /**
- * Build a map from value (0–256) to its Huffman code as a string of '0'/'1'.
- */
-private Map<Short, String> buildCodeMap() {
-    Map<Short, String> codes = new HashMap<>();
-    buildCodesRecursive(this.root, "", codes);
-    return codes;
-}
-
-/** Recursive DFS that assigns codes */
-private void buildCodesRecursive(Node node, String path, Map<Short, String> map) {
-    if (node.isLeaf()) {
-        map.put(node.value, path);
-        return;
+     * Build a map from value (0–256) to its Huffman code as a string of '0'/'1'.
+     */
+    private Map<Short, String> buildCodeMap() {
+        Map<Short, String> codes = new HashMap<>();
+        buildCodesRecursive(this.root, "", codes);
+        return codes;
     }
-    // go left = 0
-    buildCodesRecursive(node.left, path + "0", map);
-    // go right = 1
-    buildCodesRecursive(node.right, path + "1", map);
-}
+
+    /** Recursive DFS that assigns codes */
+    private void buildCodesRecursive(Node node, String path, Map<Short, String> map) {
+        if (node.isLeaf()) {
+            map.put(node.value, path);
+            return;
+        }
+        // go left = 0
+        buildCodesRecursive(node.left, path + "0", map);
+        // go right = 1
+        buildCodesRecursive(node.right, path + "1", map);
+    }
 
 
 
@@ -192,20 +187,21 @@ private void buildCodesRecursive(Node node, String path, Map<Short, String> map)
     public void encode (BitInputStream in, BitOutputStream out) {
         Map<Short, String> codeMap = buildCodeMap();
 
-    int b;
-    while ((b = in.readBits(8)) != -1) {
-        short value = (short) b;
-        String code = codeMap.get(value);
-        for (int i = 0; i < code.length(); i++) {
-            out.writeBit(code.charAt(i) == '1' ? 1 : 0);
+        int b;
+        while ((b = in.readBits(8)) != -1) {
+            short value = (short) b;
+            String code = codeMap.get(value);
+            for (int i = 0; i < code.length(); i++) {
+                out.writeBit(code.charAt(i) == '1' ? 1 : 0);
+            }
         }
-    }
 
-    short EOF = 256;
-    String eofCode = codeMap.get(EOF);
-    for (int i = 0; i < eofCode.length(); i++) {
-        out.writeBit(eofCode.charAt(i) == '1' ? 1 : 0);
-    }
+        short EOF = (short)256;
+        String eofCode = codeMap.get(EOF);
+
+        for (int i = 0; i < eofCode.length(); i++) {
+            out.writeBit(eofCode.charAt(i) == '1' ? 1 : 0);
+        }
 
     }
 
