@@ -70,24 +70,24 @@ public class Grin {
      * @param outfile the file to write the output to.
      */
     public static void encode(String infile, String outfile) throws IOException {
-         // 1) Build frequency map from the raw input file (8-bit chunks)
+ 
         Map<Short, Integer> freqs = createFrequencyMap(infile);
 
-        // 2) Build Huffman tree from freqs (constructor adds EOF)
+
         HuffmanTree tree = new HuffmanTree(freqs);
 
-        // 3) Open streams
+
         BitInputStream in = new BitInputStream(infile);
         BitOutputStream out = new BitOutputStream(outfile);
 
-        // 4) Write header: magic number + serialized tree
+
         out.writeBits(0x736, 32);
         tree.serialize(out);
 
-        // 5) Write payload: encoded input + EOF code
+
         tree.encode(in, out);
 
-        // 6) Close streams
+
         in.close();
         out.close();
     }
